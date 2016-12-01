@@ -71,12 +71,12 @@ class FEMHyperelasticity:public LagrangianForces<T>{
   typedef Eigen::Matrix<T,Eigen::Dynamic,1> TVect;
   typedef Eigen::Matrix<T,2,2> TMat2;
   int N;
-  T a,dX;
+  T a,dX,c;
   ConstitutiveModel<T>& cons_model;
   std::vector<int> constrained_nodes;
 public:
-  FEMHyperelasticity(const T a_input, const T dX_input,const int N_input,ConstitutiveModel<T>& cons_input):N(N_input),
-  a(a_input),dX(dX_input),cons_model(cons_input){constrained_nodes.resize(0);}
+  FEMHyperelasticity(const T a_input, const T dX_input,const T c_input,const int N_input,ConstitutiveModel<T>& cons_input):N(N_input),
+  a(a_input),dX(dX_input),c(c_input),cons_model(cons_input){constrained_nodes.resize(0);}
 
   T F(const TVect& x,const int e)const{
     return (x(e+1)-x(e))/dX;
@@ -95,6 +95,9 @@ public:
       force(e)+=scale*P;
       force(e+1)-=scale*P;
     }
+	T P; cons_model.P(P, F(x, 0));
+	force(0) -= scale*P;
+	force(N-1) += scale*c;
   }
 
   void AddForceDerivative(SymmetricTridiagonal<T>& A,const TVect& x,T scale){
@@ -107,6 +110,8 @@ public:
         for(int j=i;j<2;j++){
           A(e+i,e+j)+=element_stiffness(i,j);}}
     }
+	A(0, 0) = 1;
+	A(0, 1) = 0;
   }
 
   void AddForceDifferential(TVect& result,const TVect& x,const TVect& dx,T scale){

@@ -123,7 +123,7 @@ std::string output_directory;
     time+=dt;
   }
 
-  void RunSimulation(const bool verbose=false){
+  void RunSimulation(const bool verbose){
 
     Initialize();
     while(time<final_time){
@@ -143,6 +143,7 @@ public:
   int N;
   T a;
   T dX;
+  T c;
   T rho;
   T k;
   T Newton_tol;
@@ -158,7 +159,7 @@ class ElasticityDriver: public SimulationDriver<T>{
   using SimulationDriver<T>::dt;
   typedef Eigen::Matrix<T,Eigen::Dynamic, 1> TVect;
   int N;
-  T a,dX;
+  T a,dX,c;
   T rho,k;
   TVect x_n,x_np1,v_n,x_hat,residual,mass,delta;
   T Newton_tol;
@@ -170,11 +171,11 @@ public:
 
   ElasticityDriver(ElasticityParameters<T>& parameters):
   SimulationDriver<T>(parameters),N(parameters.N),a(parameters.a),dX(parameters.dX),
-  rho(parameters.rho),k(parameters.k),x_n(parameters.N),x_np1(parameters.N),v_n(parameters.N),x_hat(parameters.N),residual(parameters.N),mass(parameters.N),delta(parameters.N),
+  c(parameters.c),rho(parameters.rho),k(parameters.k),x_n(parameters.N),x_np1(parameters.N),v_n(parameters.N),x_hat(parameters.N),residual(parameters.N),mass(parameters.N),delta(parameters.N),
   Newton_tol(parameters.Newton_tol),max_newton_it(parameters.max_newton_it),be_matrix(parameters.N){
-    //cons_model=new LinearElasticity<T>(k);
-    cons_model=new NeoHookean<T>(k);
-    lf=new FEMHyperelasticity<T>(a,dX,N,*cons_model);
+    cons_model=new LinearElasticity<T>(k);
+    //cons_model=new NeoHookean<T>(k);
+    lf=new FEMHyperelasticity<T>(a,dX,c,N,*cons_model);
   }
 
   ~ElasticityDriver(){
@@ -186,13 +187,18 @@ public:
     //set intiial positions and velocity
     for(int i=0;i<N;i++){
       T x=(a+(T)i*dX);
-      x_n(i)=(T).7*x;
+      x_n(i)=(T)a+.7*(x-a);
       v_n(i)=(T)0;
     }
     //intialize mass lumped mass matrix from density
+	for (int e = 0; e < N; e++) {
+		mass(e) = 0;
+	}
     for(int e=0;e<N-1;e++){
       mass(e)+=(T).5*rho*dX;
       mass(e+1)+=(T).5*rho*dX;}
+	mass(0) = (T)1;
+	mass(1) = (T)5 * rho*dX / 6;
 
     SimulationDriver<T>::Initialize();
   }
