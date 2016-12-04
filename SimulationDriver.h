@@ -198,7 +198,7 @@ public:
       mass(e)+=(T).5*rho*dX;
       mass(e+1)+=(T).5*rho*dX;}
 	mass(0) = (T)1;
-	mass(1) = (T)5 * rho*dX / 6;
+	//mass(1) = (T)5 * rho*dX / 6;
 
     SimulationDriver<T>::Initialize();
   }
